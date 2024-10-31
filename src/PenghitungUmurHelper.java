@@ -1,16 +1,16 @@
 
-import java.time.LocalDate;
-import java.time.Period;
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.util.function.Supplier;
-import javax.swing.JTextArea;
-import org.json.JSONArray;
-import org.json.JSONObject;
+    import java.time.LocalDate;
+    import java.time.Period;
+    import java.io.BufferedReader;
+    import java.io.InputStreamReader;
+    import java.net.HttpURLConnection;
+    import java.net.URL;
+    import java.util.function.Supplier;
+    import javax.swing.JTextArea;
+    import org.json.JSONArray;
+    import org.json.JSONObject;
 
-public class PenghitungUmurHelper {
+    public class PenghitungUmurHelper {
 
     // Menghitung umur secara detail (tahun, bulan, hari)
     public String PenghitungUmurHelper(LocalDate lahir, LocalDate sekarang) {
@@ -149,4 +149,4 @@ public class PenghitungUmurHelper {
         }
     }
 
-}
+    }
