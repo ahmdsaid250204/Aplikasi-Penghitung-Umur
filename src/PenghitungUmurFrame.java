@@ -14,6 +14,8 @@ public class PenghitungUmurFrame extends javax.swing.JFrame {
      * Creates new form PenghitungUmur
      */
     private PenghitungUmurHelper Helper;
+    private volatile boolean stopFetching = false;
+    private Thread peristiwaThread;
 
     /**
      * Creates new form PenghitungUmurFrame
@@ -42,6 +44,8 @@ public class PenghitungUmurFrame extends javax.swing.JFrame {
         jLabel3 = new javax.swing.JLabel();
         jTextField2 = new javax.swing.JTextField();
         jLabel4 = new javax.swing.JLabel();
+        jScrollPane1 = new javax.swing.JScrollPane();
+        txtAreaPeristiwa = new javax.swing.JTextArea();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
@@ -132,6 +136,10 @@ public class PenghitungUmurFrame extends javax.swing.JFrame {
         jLabel4.setFont(new java.awt.Font("Tahoma", 1, 24)); // NOI18N
         jLabel4.setText("Aplikasi Penghitung Umur");
 
+        txtAreaPeristiwa.setColumns(20);
+        txtAreaPeristiwa.setRows(5);
+        jScrollPane1.setViewportView(txtAreaPeristiwa);
+
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
@@ -143,7 +151,10 @@ public class PenghitungUmurFrame extends javax.swing.JFrame {
                         .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                     .addGroup(layout.createSequentialGroup()
                         .addGap(66, 66, 66)
-                        .addComponent(jLabel4)))
+                        .addComponent(jLabel4))
+                    .addGroup(layout.createSequentialGroup()
+                        .addGap(68, 68, 68)
+                        .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 428, javax.swing.GroupLayout.PREFERRED_SIZE)))
                 .addContainerGap(183, Short.MAX_VALUE))
         );
         layout.setVerticalGroup(
@@ -153,7 +164,9 @@ public class PenghitungUmurFrame extends javax.swing.JFrame {
                 .addComponent(jLabel4)
                 .addGap(18, 18, 18)
                 .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(230, Short.MAX_VALUE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 204, Short.MAX_VALUE)
+                .addContainerGap())
         );
 
         pack();
@@ -164,26 +177,47 @@ public class PenghitungUmurFrame extends javax.swing.JFrame {
     }//GEN-LAST:event_jTextField1ActionPerformed
 
     private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
-        Date tanggalLahir = jDateChooser1.getDate(); // Correcting the variable name
+        Date tanggalLahir = jDateChooser1.getDate(); 
         if (tanggalLahir != null) {
-            // Menghitung umur dan hari ulang tahun berikutnya
             LocalDate lahir = tanggalLahir.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
             LocalDate sekarang = LocalDate.now();
 
-            // Menghitung umur
             String umur = Helper.PenghitungUmurHelper(lahir, sekarang);
-            jTextField1.setText(umur); // Correcting the variable name
+            jTextField1.setText(umur); 
 
-            // Menghitung tanggal ulang tahun berikutnya
             LocalDate ulangTahunBerikutnya = Helper.hariUlangTahunBerikutnya(lahir, sekarang);
             String hariUlangTahunBerikutnya = Helper.getDayOfWeekInIndonesian(ulangTahunBerikutnya);
 
-            // Format tanggal ulang tahun berikutnya
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy");
             String tanggalUlangTahunBerikutnya = ulangTahunBerikutnya.format(formatter);
 
-            // Menampilkan hasil pada JTextField
-            jTextField2.setText(hariUlangTahunBerikutnya + " (" + tanggalUlangTahunBerikutnya + ")"); // Correcting the variable name
+            jTextField2.setText(hariUlangTahunBerikutnya + " (" + tanggalUlangTahunBerikutnya + ")");
+
+            stopFetching = true;
+            if (peristiwaThread != null && peristiwaThread.isAlive()) {
+                peristiwaThread.interrupt();
+            }
+
+            stopFetching = false;
+
+            peristiwaThread = new Thread(() -> {
+                try {
+                    txtAreaPeristiwa.setText("Tunggu, sedang mengambil data...\n");
+                    Helper.getPeristiwaBarisPerBaris(ulangTahunBerikutnya, txtAreaPeristiwa, () -> stopFetching);
+
+                    if (!stopFetching) {
+                        javax.swing.SwingUtilities.invokeLater(() ->
+                                txtAreaPeristiwa.append("Selesai mengambil data peristiwa"));
+                    }
+                } catch (Exception e) {
+                    if (Thread.currentThread().isInterrupted()) {
+                        javax.swing.SwingUtilities.invokeLater(() ->
+                                txtAreaPeristiwa.setText("Pengambilan data dibatalkan.\n"));
+                    }
+                }
+            });
+
+            peristiwaThread.start();
         } else {
             jTextField1.setText("Tanggal tidak valid");
             jTextField2.setText("");
@@ -202,6 +236,12 @@ public class PenghitungUmurFrame extends javax.swing.JFrame {
     private void jDateChooser1PropertyChange(java.beans.PropertyChangeEvent evt) {//GEN-FIRST:event_jDateChooser1PropertyChange
         jLabel2.setText("Umur Anda");
         jLabel3.setText("Hari Ulang Tahun Berikutnya ");
+        // Hentikan thread yang sedang berjalan saat tanggal lahir berubah
+        stopFetching = true;
+        if (peristiwaThread != null && peristiwaThread.isAlive()) {
+        peristiwaThread.interrupt();
+    }
+    txtAreaPeristiwa.setText("");
     }//GEN-LAST:event_jDateChooser1PropertyChange
 
     /**
@@ -248,7 +288,9 @@ public class PenghitungUmurFrame extends javax.swing.JFrame {
     private javax.swing.JLabel jLabel3;
     private javax.swing.JLabel jLabel4;
     private javax.swing.JPanel jPanel1;
+    private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JTextField jTextField1;
     private javax.swing.JTextField jTextField2;
+    private javax.swing.JTextArea txtAreaPeristiwa;
     // End of variables declaration//GEN-END:variables
 }
